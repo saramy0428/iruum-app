@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-paper text-ink font-serif;
+    /* Subtle paper grain — barely perceptible texture */
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(26, 26, 26, 0.015) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+
+  /* Custom selection color — vermilion ink */
+  ::selection {
+    @apply bg-vermilion text-paper;
+  }
+}
+
+@layer components {
+  /* Hairline divider — like a brushstroke */
+  .hairline {
+    @apply h-px bg-ink/15;
+  }
+
+  /* Vermilion seal accent — a small square with vermilion fill */
+  .seal-mark {
+    @apply inline-block w-2 h-2 bg-vermilion;
+  }
+
+  /* Editorial caps — small, wide-tracked label text */
+  .eyebrow {
+    @apply font-sans text-xs uppercase tracking-widest text-stone;
+  }
+}

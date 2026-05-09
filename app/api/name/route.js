@@ -47,7 +47,10 @@ export async function POST(request) {
 // generator response stays useful even when Supabase is down or unconfigured.
 async function persistSajuResult(result) {
   const supabase = getSupabaseServiceClient();
-  if (!supabase) return null;
+  if (!supabase) {
+    console.warn("[saju_results] persistence skipped: Supabase client unavailable (check env vars)");
+    return null;
+  }
 
   try {
     const { input } = result;
@@ -72,12 +75,37 @@ async function persistSajuResult(result) {
       .single();
 
     if (error) {
-      console.error("saju_results insert failed:", error);
+      console.error("[saju_results] insert failed:", {
+        code:    error.code,
+        message: error.message,
+        details: error.details,
+        hint:    error.hint,
+        diagnosis: diagnoseInsertError(error),
+      });
       return null;
     }
     return data.id;
   } catch (err) {
-    console.error("saju_results insert threw:", err);
+    console.error("[saju_results] insert threw:", err);
     return null;
+  }
+}
+
+// Maps known Supabase/PostgREST error codes to actionable next steps.
+function diagnoseInsertError(error) {
+  switch (error.code) {
+    case "PGRST125":
+    case "PGRST205":
+      return "Table 'saju_results' not found at this URL. Check (a) NEXT_PUBLIC_SUPABASE_URL has no trailing slash or path, and (b) the migration has been applied (supabase db push).";
+    case "42P01":
+      return "Table does not exist in the database. Run: supabase db push";
+    case "42501":
+      return "Permission denied. Service role key may be wrong, or RLS is blocking — service role should bypass RLS, so verify SUPABASE_SERVICE_ROLE_KEY is the service_role (not anon) key.";
+    case "23502":
+      return "NOT NULL constraint violation. A required column received null — check the insert payload.";
+    case "23514":
+      return "CHECK constraint violation. A column value is outside its allowed set (status, type, etc.).";
+    default:
+      return null;
   }
 }

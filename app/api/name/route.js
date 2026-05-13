@@ -23,8 +23,10 @@ export async function POST(request) {
 
     const sajuResultId = await persistSajuResult(result);
 
-    // Strip alternates from API response — keep payload tight for client
-    const { alternates, sessionSeed: _, ...lean } = result;
+    // Strip alternates from API response — keep payload tight for client.
+    // Keep sessionSeed: client persists it to localStorage so /api/claim-result
+    // can attach this anonymous row to a user after login.
+    const { alternates, ...lean } = result;
 
     return NextResponse.json({ ...lean, sajuResultId });
   } catch (error) {

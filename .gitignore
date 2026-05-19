@@ -20,3 +20,9 @@ dist/
 # editor
 .vscode/
 .idea/
+
+# claude code (local-only settings & permissions)
+.claude/
+
+# supabase cli cache
+supabase/.temp/

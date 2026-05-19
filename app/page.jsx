@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createBrowserClient } from "@supabase/ssr";
 import InputForm from "../components/InputForm";
 import ResultCard from "../components/ResultCard";
 import Loading from "../components/Loading";
@@ -10,6 +11,33 @@ export default function Page() {
   const [result, setResult] = useState(null);
   const [surname, setSurname] = useState("");
   const [error,  setError]  = useState(null);
+
+  // 로그인 후 돌아왔을 때 익명 결과를 계정에 연결
+  useEffect(() => {
+    async function claimIfNeeded() {
+      const seed = localStorage.getItem("iruum_session_seed");
+      if (!seed) return;
+
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      );
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return; // 비로그인 상태면 skip
+
+      const res = await fetch("/api/claim-result", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionSeed: seed }),
+      });
+
+      if (res.ok) {
+        localStorage.removeItem("iruum_session_seed");
+      }
+    }
+
+    claimIfNeeded();
+  }, []);
 
   async function handleSubmit(payload) {
     setSurname(payload.surname);
@@ -31,6 +59,15 @@ export default function Page() {
       const data = await res.json();
       setResult(data);
       setPhase("result");
+
+      // sessionSeed 저장 — 로그인 후 claim-result에서 사용
+      if (data.sessionSeed) {
+        try {
+          localStorage.setItem("iruum_session_seed", data.sessionSeed);
+        } catch {
+          // localStorage 접근 불가 환경에서는 무시
+        }
+      }
 
       // Scroll to top so the user sees the name first
       if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });

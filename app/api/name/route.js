@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { generateDestinyName } from "../../../lib/generateDestinyName.js";
+import { getFourPillars } from "../../../lib/saju.js";
+import { getSupabaseServiceClient } from "../../../lib/supabase/server.js";
 
 export async function POST(request) {
   try {
@@ -19,10 +21,14 @@ export async function POST(request) {
       { sessionSeed, topN: 1 }   // UI shows only one name
     );
 
-    // Strip alternates from API response — keep payload tight for client
-    const { alternates, sessionSeed: _, ...lean } = result;
+    const sajuResultId = await persistSajuResult(result);
 
-    return NextResponse.json(lean);
+    // Strip alternates from API response — keep payload tight for client.
+    // Keep sessionSeed: client persists it to localStorage so /api/claim-result
+    // can attach this anonymous row to a user after login.
+    const { alternates, ...lean } = result;
+
+    return NextResponse.json({ ...lean, sajuResultId });
   } catch (error) {
     if (error.code === "INVALID_INPUT") {
       return NextResponse.json(
@@ -35,5 +41,73 @@ export async function POST(request) {
       { error: "Failed to generate name" },
       { status: 500 }
     );
+  }
+}
+
+// Saves the generator output for later product purchase.
+// Returns the new row id, or null if persistence is unavailable —
+// generator response stays useful even when Supabase is down or unconfigured.
+async function persistSajuResult(result) {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    console.warn("[saju_results] persistence skipped: Supabase client unavailable (check env vars)");
+    return null;
+  }
+
+  try {
+    const { input } = result;
+    const [year, month, day] = input.birthDate.split("-").map(Number);
+    const [hour, minute] = input.birthTime
+      ? input.birthTime.split(":").map(Number)
+      : [9, 0];
+    const fourPillars = getFourPillars(year, month, day, hour, minute);
+
+    const { data, error } = await supabase
+      .from("saju_results")
+      .insert({
+        session_seed:     result.sessionSeed,
+        input:            result.input,
+        saju_summary:     result.sajuSummary,
+        recommended_name: result.name,
+        strategy:         result.strategy,
+        reason:           result.reason,
+        four_pillars:     fourPillars,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("[saju_results] insert failed:", {
+        code:    error.code,
+        message: error.message,
+        details: error.details,
+        hint:    error.hint,
+        diagnosis: diagnoseInsertError(error),
+      });
+      return null;
+    }
+    return data.id;
+  } catch (err) {
+    console.error("[saju_results] insert threw:", err);
+    return null;
+  }
+}
+
+// Maps known Supabase/PostgREST error codes to actionable next steps.
+function diagnoseInsertError(error) {
+  switch (error.code) {
+    case "PGRST125":
+    case "PGRST205":
+      return "Table 'saju_results' not found at this URL. Check (a) NEXT_PUBLIC_SUPABASE_URL has no trailing slash or path, and (b) the migration has been applied (supabase db push).";
+    case "42P01":
+      return "Table does not exist in the database. Run: supabase db push";
+    case "42501":
+      return "Permission denied. Service role key may be wrong, or RLS is blocking — service role should bypass RLS, so verify SUPABASE_SERVICE_ROLE_KEY is the service_role (not anon) key.";
+    case "23502":
+      return "NOT NULL constraint violation. A required column received null — check the insert payload.";
+    case "23514":
+      return "CHECK constraint violation. A column value is outside its allowed set (status, type, etc.).";
+    default:
+      return null;
   }
 }

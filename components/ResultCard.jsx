@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 export default function ResultCard({ result, surname, onTryAnother }) {
-  const { name, sajuSummary, strategy, reason } = result;
+  const { name, sajuSummary, strategy, reason, sajuResultId } = result;
 
   function speakKoreanName() {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;

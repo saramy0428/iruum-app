@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import DownloadPdfButton from "./DownloadPdfButton";
 
 export default function ResultCard({ result, surname, onTryAnother }) {
   const { name, sajuSummary, strategy, reason, sajuResultId } = result;
@@ -56,9 +55,6 @@ export default function ResultCard({ result, surname, onTryAnother }) {
         <p className="font-display text-2xl italic text-ink/70 max-w-2xl leading-relaxed">
           “{name.meaning}”
         </p>
-
-        {/* Save the name — PDF download (signed-in users only) */}
-        <DownloadPdfButton sajuResultId={sajuResultId} />
       </div>
 
       <div className="hairline" />

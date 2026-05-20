@@ -1,13 +1,31 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 
+function normalizeUrl(raw) {
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return null;
+  }
+}
+
 export async function middleware(request) {
   let supabaseResponse = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
+  const url = normalizeUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Env 누락 시 세션 갱신을 건너뛰고 페이지 렌더링은 통과시킴.
+  // 인증이 진짜 필요한 흐름은 자기 라우트에서 자체적으로 에러를 표면화함.
+  if (!url || !key) {
+    console.warn("[middleware] Supabase env missing — skipping session refresh");
+    return supabaseResponse;
+  }
+
+  try {
+    const supabase = createServerClient(url, key, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -22,11 +40,13 @@ export async function middleware(request) {
           );
         },
       },
-    }
-  );
+    });
 
-  // 세션 토큰 자동 갱신 — 이 호출을 제거하거나 await를 빠뜨리면 안 됨
-  await supabase.auth.getUser();
+    // 세션 토큰 자동 갱신 — 실패해도 페이지는 떠야 하므로 try/catch로 격리
+    await supabase.auth.getUser();
+  } catch (err) {
+    console.error("[middleware] session refresh failed:", err?.message ?? err);
+  }
 
   return supabaseResponse;
 }

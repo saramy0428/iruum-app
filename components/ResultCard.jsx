@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { NameStampCTA } from "./result_cta";
 
 export default function ResultCard({ result, surname, onTryAnother }) {
   const { name, sajuSummary, strategy, reason, sajuResultId } = result;
@@ -94,23 +94,8 @@ export default function ResultCard({ result, surname, onTryAnother }) {
         </div>
       </Section>
 
-      <div className="hairline" />
-
-      {/* ── CTAs ───────────────────────────────────────────────────────────── */}
-      <Section eyebrow="Make it yours">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-          <ProductCard
-            title="Custom Korean Name Stamp"
-            sub="A traditional carved seal — your name in vermilion ink"
-            comingSoon
-          />
-          <ProductCard
-            title="Korean Name Goods Collection"
-            sub="Calligraphy prints, leather tags, and more, made to order"
-            comingSoon
-          />
-        </div>
-      </Section>
+      {/* ── CTA ────────────────────────────────────────────────────────────── */}
+      <NameStampCTA recommendedName={name} />
 
       {/* ── Try another ────────────────────────────────────────────────────── */}
       <div className="pt-8 flex items-center gap-6">
@@ -174,25 +159,6 @@ function ElementBars({ distribution }) {
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function ProductCard({ title, sub, comingSoon }) {
-  return (
-    <div className={`group relative border border-ink/15 p-8 transition-colors ${
-      comingSoon ? "cursor-not-allowed bg-rice/40" : "hover:border-ink hover:bg-rice cursor-pointer"
-    }`}>
-      <div className="space-y-2">
-        <h3 className="font-display text-2xl text-ink leading-tight">{title}</h3>
-        <p className="font-serif text-base text-stone">{sub}</p>
-      </div>
-      {comingSoon && (
-        <div className="mt-6 inline-flex items-center gap-2">
-          <span className="seal-mark opacity-60" />
-          <span className="eyebrow">Coming soon</span>
-        </div>
-      )}
     </div>
   );
 }

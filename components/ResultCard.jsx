@@ -9,7 +9,7 @@ export default function ResultCard({ result, surname, onTryAnother }) {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     const utterance = new SpeechSynthesisUtterance(name.hangul);
     utterance.lang = "ko-KR";
-    utterance.rate = 0.85;
+    utterance.rate = 0.7;
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   }

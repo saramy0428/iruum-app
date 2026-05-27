@@ -7,12 +7,37 @@ const FIELD_BASE =
   "text-ink font-serif text-lg placeholder:text-stone/60 " +
   "focus:outline-none focus:border-ink transition-colors";
 
+const SELECT_BASE =
+  "w-full bg-transparent border-0 border-b border-ink/25 py-3 pl-1 pr-7 " +
+  "text-ink font-serif text-lg " +
+  "focus:outline-none focus:border-ink transition-colors " +
+  "appearance-none cursor-pointer disabled:cursor-not-allowed";
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: CURRENT_YEAR - 1900 + 1 }, (_, i) => CURRENT_YEAR - i);
+const HOURS_12 = Array.from({ length: 12 }, (_, i) => i + 1);
+const MINUTES = Array.from({ length: 60 }, (_, i) => i);
+
+function daysInMonth(year, month) {
+  if (!year || !month) return 31;
+  return new Date(parseInt(year, 10), parseInt(month, 10), 0).getDate();
+}
+
 export default function InputForm({ onSubmit, isLoading }) {
   const [form, setForm] = useState({
     email: "",
     surname: "",
-    birthDate: "",
-    birthTime: "",
+    birthYear: "",
+    birthMonth: "",
+    birthDay: "",
+    birthHour: "",
+    birthMinute: "",
+    birthAmPm: "",
     timeUnknown: false,
     birthCountry: "",
     birthCity: "",
@@ -23,12 +48,42 @@ export default function InputForm({ onSubmit, isLoading }) {
 
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // Clamp day if month/year change makes current day invalid (e.g. Feb 30 → Feb 28)
+  const updateDatePart = (k, v) => {
+    setForm((f) => {
+      const next = { ...f, [k]: v };
+      const maxDay = daysInMonth(next.birthYear, next.birthMonth);
+      if (next.birthDay && parseInt(next.birthDay, 10) > maxDay) {
+        next.birthDay = String(maxDay);
+      }
+      return next;
+    });
+  };
+
+  const dateComplete = form.birthYear && form.birthMonth && form.birthDay;
+  const timeComplete = form.birthHour && form.birthMinute !== "" && form.birthAmPm;
+
   const canSubmit =
     form.surname.trim() &&
-    form.birthDate &&
+    dateComplete &&
     form.gender &&
     form.consent &&
     !isLoading;
+
+  function combineDate() {
+    if (!dateComplete) return "";
+    const m = String(form.birthMonth).padStart(2, "0");
+    const d = String(form.birthDay).padStart(2, "0");
+    return `${form.birthYear}-${m}-${d}`;
+  }
+
+  function combineTime() {
+    if (form.timeUnknown || !timeComplete) return null;
+    let h = parseInt(form.birthHour, 10);
+    if (form.birthAmPm === "PM" && h !== 12) h += 12;
+    if (form.birthAmPm === "AM" && h === 12) h = 0;
+    return `${String(h).padStart(2, "0")}:${String(form.birthMinute).padStart(2, "0")}`;
+  }
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -37,13 +92,15 @@ export default function InputForm({ onSubmit, isLoading }) {
     onSubmit({
       email:        form.email,
       surname:      form.surname.trim(),
-      birthDate:    form.birthDate,
-      birthTime:    form.timeUnknown ? null : form.birthTime || null,
+      birthDate:    combineDate(),
+      birthTime:    combineTime(),
       birthCountry: form.placeUnknown ? null : form.birthCountry || null,
       birthCity:    form.placeUnknown ? null : form.birthCity || null,
       gender:       form.gender,
     });
   }
+
+  const dayCount = daysInMonth(form.birthYear, form.birthMonth);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-12">
@@ -75,13 +132,38 @@ export default function InputForm({ onSubmit, isLoading }) {
 
       {/* ── Birth Date ─────────────────────────────────────────────────────── */}
       <Field label="Date of birth">
-        <input
-          type="date"
-          className={FIELD_BASE}
-          value={form.birthDate}
-          onChange={(e) => update("birthDate", e.target.value)}
-          required
-        />
+        <div className="grid grid-cols-3 gap-4">
+          <Select
+            value={form.birthMonth}
+            onChange={(e) => updateDatePart("birthMonth", e.target.value)}
+            aria-label="Birth month"
+          >
+            <option value="">Month</option>
+            {MONTHS.map((m, i) => (
+              <option key={i + 1} value={i + 1}>{m}</option>
+            ))}
+          </Select>
+          <Select
+            value={form.birthDay}
+            onChange={(e) => updateDatePart("birthDay", e.target.value)}
+            aria-label="Birth day"
+          >
+            <option value="">Day</option>
+            {Array.from({ length: dayCount }, (_, i) => i + 1).map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </Select>
+          <Select
+            value={form.birthYear}
+            onChange={(e) => updateDatePart("birthYear", e.target.value)}
+            aria-label="Birth year"
+          >
+            <option value="">Year</option>
+            {YEARS.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </Select>
+        </div>
       </Field>
 
       {/* ── Birth Time ─────────────────────────────────────────────────────── */}
@@ -96,13 +178,40 @@ export default function InputForm({ onSubmit, isLoading }) {
           />
         }
       >
-        <input
-          type="time"
-          disabled={form.timeUnknown}
-          className={`${FIELD_BASE} disabled:opacity-30`}
-          value={form.birthTime}
-          onChange={(e) => update("birthTime", e.target.value)}
-        />
+        <div className="grid grid-cols-3 gap-4">
+          <Select
+            value={form.birthHour}
+            onChange={(e) => update("birthHour", e.target.value)}
+            disabled={form.timeUnknown}
+            aria-label="Birth hour"
+          >
+            <option value="">Hour</option>
+            {HOURS_12.map((h) => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </Select>
+          <Select
+            value={form.birthMinute}
+            onChange={(e) => update("birthMinute", e.target.value)}
+            disabled={form.timeUnknown}
+            aria-label="Birth minute"
+          >
+            <option value="">Minute</option>
+            {MINUTES.map((m) => (
+              <option key={m} value={m}>{String(m).padStart(2, "0")}</option>
+            ))}
+          </Select>
+          <Select
+            value={form.birthAmPm}
+            onChange={(e) => update("birthAmPm", e.target.value)}
+            disabled={form.timeUnknown}
+            aria-label="AM or PM"
+          >
+            <option value="">AM/PM</option>
+            <option value="AM">AM</option>
+            <option value="PM">PM</option>
+          </Select>
+        </div>
       </Field>
 
       {/* ── Birth Place ────────────────────────────────────────────────────── */}
@@ -234,6 +343,31 @@ function Field({ label, optional, helper, children }) {
         {helper}
       </div>
       {children}
+    </div>
+  );
+}
+
+function Select({ value, onChange, disabled, children, ...rest }) {
+  return (
+    <div className={`relative ${disabled ? "opacity-30" : ""}`}>
+      <select
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className={SELECT_BASE}
+        {...rest}
+      >
+        {children}
+      </select>
+      <svg
+        viewBox="0 0 20 20"
+        className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/50"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      >
+        <polyline points="5,8 10,13 15,8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
     </div>
   );
 }

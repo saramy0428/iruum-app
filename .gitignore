@@ -26,3 +26,7 @@ dist/
 
 # supabase cli cache
 supabase/.temp/
+
+# temp / scratch
+data/generateNames.mjs
+koreanNames_500.js

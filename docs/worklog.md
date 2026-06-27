@@ -12,6 +12,85 @@
 
 # Sessions
 
+## 2026-06-27 — 단일 페이지 컴팩트 폼 + 카드형 결과
+
+### 변경 내용
+1. **메인 페이지 구조 단순화** (`app/page.jsx` 전면 재작성)
+   - 기존 4-phase 흐름 (`intro → form → loading → result`) 폐기
+   - 새 흐름: 폼이 항상 상단에 보이고, 제출 시 같은 페이지의 아래쪽에 결과가 펼쳐짐
+   - `phase: 'form' | 'loading' | 'result' | 'error'` — 폼은 항상 렌더, 그 외는 폼 아래 카드로 렌더
+   - 결과/로딩 등장 시 `scrollIntoView`로 부드럽게 스크롤
+2. **새 인라인 컴팩트 폼** (`CompactForm` in `app/page.jsx`)
+   - 필드: 성(1줄) / 생년월일 + 출생시간(한 줄 2칸) / 성별(3-pill grid) / 동의 체크 / 제출 버튼
+   - 출생지·이메일 제거 (사주 엔진이 안 씀, 이메일은 옵션이라 빼도 무방)
+   - 네이티브 `<input type="date">`, `<input type="time">` 사용 — 모바일에서 OS 피커 활용, 12개 select 제거
+   - 시간 모름 토글: 라벨 옆 인라인 텍스트 버튼으로 압축
+3. **결과 카드 분리** (`components/ResultCard.jsx` 재작성)
+   - 4개 카드 + CTA 카드로 분리, 각 카드 `bg-rice/40 backdrop-blur-md border border-ink/10 rounded-2xl p-5`
+   - 카드 1: 추천 이름 (한자/한글·로마자/뜻 + Listen)
+   - 카드 2: 사주 4기둥 (Year/Month/Day/Hour 4-col 그리드, 천간/지지/원소)
+   - 카드 3: 오행 분포 (가로 막대 + dominant/lacking/balance 3-col)
+   - 카드 4: 추천 사유 + 음절 분해
+   - 모바일 폰트: 이름 `text-5xl md:text-7xl`, 본문 `text-sm md:text-base`
+4. **API 응답에 `fourPillars` 추가** (`lib/generateDestinyName.js`)
+   - 엔진이 이미 계산해서 persist만 했는데, 이제 클라이언트가 4기둥을 표시하므로 응답에도 포함
+5. **CTA 재스타일** (`components/result_cta.jsx`)
+   - 기존 `mt-16 border-t` 풀폭 섹션 → 카드 내부에 들어맞는 중앙정렬 텍스트 + 버튼으로 축소
+6. **레이아웃 폭**: `max-w-3xl` → `max-w-md mx-auto`, 패딩 `px-6 md:px-12` → `px-4`, 카드 간격 `gap-4`
+
+### 만진 파일
+- `app/page.jsx` (재작성)
+- `components/ResultCard.jsx` (재작성)
+- `components/result_cta.jsx`
+- `lib/generateDestinyName.js`
+- `app/api/name/route.js` — 손 안 댐 (스프레드 `...lean` 덕분에 `fourPillars` 자동 통과)
+
+### 메모 / 결정
+- **`components/InputForm.jsx`는 그대로 둠**. 새 페이지가 안 쓰지만 삭제하지 않음 — 다시 복잡한 폼이 필요해질 때 부활시킬 수 있도록. 다음 정리에서 확실히 안 쓰면 제거.
+- **출생지(country/city) 제거 결정 근거**: `lib/saju.js`는 year/month/day/hour/minute만 사용. 출생지는 메타데이터일 뿐 계산에 들어가지 않으므로 컴팩트화 우선.
+- **네이티브 date/time 입력 채택 근거**: 12개 `<select>` 그리드를 두 줄로 압축할 가장 빠른 방법. 데스크톱 브라우저별 스타일 편차는 있지만 모바일이 1차 타겟이라 OS 피커가 오히려 UX 우위.
+- **사주 4기둥 표시**: 천간/지지의 `ko`만 노출 (한자 필드는 데이터에 없음). 추후 한자 표시 원하면 `HEAVENLY_STEMS` 정의에 `hanja` 필드를 추가하면 됨.
+
+### 검증
+- `npm run build` 통과 (11 routes)
+- `/` 라우트 번들 사이즈 8.73 kB → 7.44 kB (InputForm 미사용)
+
+## 2026-06-27 — Indigo 테마 + Noto Sans KR 전면 교체
+
+### 변경 내용
+1. **컬러 시스템 교체** (`tailwind.config.js`)
+   - 토큰 이름은 유지하되 값을 재할당 — 모든 컴포넌트가 자동으로 새 팔레트를 픽업
+   - `paper #faf8f3 → #1e1b4b` (deep indigo bg)
+   - `ink #1a1a1a → #f0f0ff` (primary text)
+   - `vermilion #c8392b → #818cf8` (lavender accent)
+   - `stone #8a8480 → #a5b4fc` (secondary text)
+   - `rice → #2d2a6e` (카드/섹션 medium indigo)
+   - `mist → #312e81`
+2. **폰트 통일**: Cormorant Garamond / Noto Serif KR / Inter Tight 전부 제거 → Noto Sans KR (400/500/700) 하나로
+   - `app/layout.jsx` Google Fonts link 교체
+   - `tailwind.config.js` `display/serif/sans/korean` 네 토큰 모두 Noto Sans KR로 매핑 (기존 `font-display`/`font-korean` 클래스는 그대로 두고 fallback만 바꿈)
+3. **body 그라디언트**: `app/globals.css`
+   - paper grain 제거, `linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%)` 적용
+   - `min-height: 100vh`
+4. **하드코딩 hex 정리**
+   - `components/result_cta.jsx`: `#1a1a1a / #c8392b / #faf8f3` → 토큰
+   - `app/login/page.jsx`: input `bg-white` → `bg-rice/60` (다크 테마와 충돌 방지), `bg-paper` 제거 (gradient로 흡수)
+
+### 만진 파일
+- `tailwind.config.js`
+- `app/globals.css`
+- `app/layout.jsx`
+- `components/result_cta.jsx`
+- `app/login/page.jsx`
+
+### 메모 / 결정
+- **`components/InfographicPDF.jsx`는 일부러 안 건드림**. PDF는 인쇄 출력물 — 어두운 indigo 배경으로 바꾸면 종이 인쇄 시 잉크 낭비 + 가독성 망가짐. 다운로드 PDF는 paper/ink/vermilion 그대로 유지가 맞음.
+- 토큰 이름을 보존한 덕분에 `bg-ink text-paper` 같은 기존 버튼 스타일이 자동으로 "라이트 버튼 on 다크 배경" 인버스로 작동 — 별도 수정 불필요.
+- `font-display`, `font-serif`, `font-korean` 클래스는 코드 곳곳에 박혀 있어 그대로 두고 fallback만 Noto Sans KR로 통일. 추후 정리 가능하지만 동작상 의미 동일.
+
+### 검증
+- `npm run build` 통과 (11 routes, no type/lint error)
+
 ## 2026-06-08 — Hangul dedup, TTS rate, work log 도입
 
 ### 변경 내용

@@ -23,24 +23,24 @@ export function NameStampCTA({ recommendedName }) {
   const href = `/stamp${query.toString() ? `?${query}` : ""}`;
 
   return (
-    <section className="mx-auto mt-16 w-full max-w-2xl border-t border-[#1a1a1a] px-6 pt-10 text-center sm:px-8">
-      <p className="mb-3 text-[11px] uppercase tracking-[0.2em] text-[#c8392b]">
+    <div className="w-full text-center">
+      <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-vermilion">
         Make it yours
       </p>
-      <h2 className="mb-4 font-serif text-2xl leading-snug text-[#1a1a1a] sm:text-3xl">
+      <h2 className="mb-3 font-serif text-xl md:text-2xl leading-snug text-ink">
         Turn your name into a Korean name stamp
       </h2>
-      <p className="mx-auto mb-8 max-w-md text-sm leading-[1.7] text-[#1a1a1a]/65">
+      <p className="mx-auto mb-5 max-w-sm text-xs md:text-sm leading-[1.7] text-ink/70">
         A hand-carved seal pressed in vermilion ink — a keepsake, a gift, and a
         small talisman bearing the name we found for you.
       </p>
 
       <Link
         href={href}
-        className="inline-block rounded-sm bg-[#c8392b] px-8 py-4 font-serif text-base tracking-wide text-[#faf8f3] transition-colors hover:bg-[#a82e22]"
+        className="inline-block rounded-lg bg-vermilion px-6 py-3 font-sans text-sm tracking-wide text-paper transition-colors hover:bg-vermilion/85"
       >
         Order your Korean name stamp →
       </Link>
-    </section>
+    </div>
   );
 }

@@ -10,13 +10,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        {/* Cormorant Garamond — editorial serif for English */}
-        {/* Noto Serif KR — refined Korean serif for hangul/hanja */}
-        {/* Inter Tight — quiet sans for UI labels */}
+        {/* Noto Sans KR — unified type for Latin + hangul/hanja */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Noto+Serif+KR:wght@400;500;600;700&family=Inter+Tight:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap"
           rel="stylesheet"
         />
       </head>

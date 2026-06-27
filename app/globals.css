@@ -9,26 +9,25 @@
   }
 
   body {
-    @apply bg-paper text-ink font-serif;
-    /* Subtle paper grain — barely perceptible texture */
-    background-image:
-      radial-gradient(circle at 1px 1px, rgba(26, 26, 26, 0.015) 1px, transparent 0);
-    background-size: 24px 24px;
+    @apply text-ink font-sans;
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
   }
 
-  /* Custom selection color — vermilion ink */
+  /* Selection — lavender accent on indigo */
   ::selection {
     @apply bg-vermilion text-paper;
   }
 }
 
 @layer components {
-  /* Hairline divider — like a brushstroke */
+  /* Hairline divider — subtle lavender on indigo */
   .hairline {
     @apply h-px bg-ink/15;
   }
 
-  /* Vermilion seal accent — a small square with vermilion fill */
+  /* Lavender accent dot */
   .seal-mark {
     @apply inline-block w-2 h-2 bg-vermilion;
   }

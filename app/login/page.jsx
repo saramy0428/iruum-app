@@ -51,7 +51,7 @@ function LoginForm() {
       : null;
 
   return (
-    <main className="min-h-screen bg-paper flex flex-col items-center justify-center px-4">
+    <main className="min-h-screen flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* 로고 / 타이틀 */}
         <div className="text-center mb-10">
@@ -116,7 +116,7 @@ function LoginForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
                 disabled={status === "loading"}
-                className="w-full px-4 py-3 bg-white border border-ink/15 rounded
+                className="w-full px-4 py-3 bg-rice/60 border border-ink/15 rounded
                            font-sans text-sm text-ink placeholder-ink/30
                            focus:outline-none focus:border-ink/50 focus:ring-1 focus:ring-ink/20
                            disabled:opacity-50 transition-colors"

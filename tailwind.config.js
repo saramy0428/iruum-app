@@ -7,18 +7,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink:       "#1a1a1a",   // primary text — near-black
-        paper:     "#faf8f3",   // warm cream background
-        vermilion: "#c8392b",   // Korean stamp ink red — sparingly
-        stone:     "#8a8480",   // secondary text
-        mist:      "#e8e4dc",   // subtle dividers / hover surfaces
-        rice:      "#f3efe6",   // alt surface (slightly warmer than paper)
+        ink:       "#f0f0ff",   // primary text — near-white on indigo
+        paper:     "#1e1b4b",   // deep indigo background
+        vermilion: "#818cf8",   // lavender accent
+        stone:     "#a5b4fc",   // secondary text — soft lavender
+        mist:      "#312e81",   // subtle dividers / hover surfaces
+        rice:      "#2d2a6e",   // card / section surface (medium indigo)
       },
       fontFamily: {
-        display:  ['"Cormorant Garamond"', 'Georgia', 'serif'],
-        serif:    ['"Cormorant Garamond"', 'Georgia', 'serif'],
-        sans:     ['"Inter Tight"', 'system-ui', 'sans-serif'],
-        korean:   ['"Noto Serif KR"', '"Cormorant Garamond"', 'serif'],
+        display:  ['"Noto Sans KR"', 'system-ui', 'sans-serif'],
+        serif:    ['"Noto Sans KR"', 'system-ui', 'sans-serif'],
+        sans:     ['"Noto Sans KR"', 'system-ui', 'sans-serif'],
+        korean:   ['"Noto Sans KR"', 'system-ui', 'sans-serif'],
       },
       letterSpacing: {
         widest: "0.18em",

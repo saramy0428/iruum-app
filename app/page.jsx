@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import ResultCard from "../components/ResultCard";
 import Loading from "../components/Loading";
+import { COUNTRY_OPTIONS } from "../lib/longitudeCorrection.js";
 
 export default function Page() {
   const [phase, setPhase] = useState("form"); // 'form' | 'loading' | 'result' | 'error'
@@ -157,15 +158,16 @@ function daysInMonth(year, month) {
 
 function CompactForm({ onSubmit, isLoading }) {
   const [form, setForm] = useState({
-    surname:     "",
-    birthYear:   "",
-    birthMonth:  "",
-    birthDay:    "",
-    birthHour:   "",
-    birthMinute: "",
-    timeUnknown: false,
-    gender:      "",
-    consent:     false,
+    surname:      "",
+    birthYear:    "",
+    birthMonth:   "",
+    birthDay:     "",
+    birthHour:    "",
+    birthMinute:  "",
+    timeUnknown:  false,
+    birthCountry: "",
+    gender:       "",
+    consent:      false,
   });
 
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -210,10 +212,11 @@ function CompactForm({ onSubmit, isLoading }) {
     e.preventDefault();
     if (!canSubmit) return;
     onSubmit({
-      surname:   form.surname.trim(),
-      birthDate: combineDate(),
-      birthTime: combineTime(),
-      gender:    form.gender,
+      surname:      form.surname.trim(),
+      birthDate:    combineDate(),
+      birthTime:    combineTime(),
+      birthCountry: form.birthCountry || null,
+      gender:       form.gender,
     });
   }
 
@@ -330,6 +333,26 @@ function CompactForm({ onSubmit, isLoading }) {
           </select>
         </div>
       </div>
+
+      {/* Birth country — for longitude / true solar time correction */}
+      <label className="block space-y-1.5">
+        <span className="eyebrow flex items-center justify-between">
+          <span>Birth country</span>
+          <span className="text-[10px] tracking-wider text-stone">optional</span>
+        </span>
+        <select
+          value={form.birthCountry}
+          onChange={(e) => update("birthCountry", e.target.value)}
+          className={inputBase}
+          aria-label="Country of birth"
+        >
+          <option value="">Select country</option>
+          {COUNTRY_OPTIONS.map(({ key, label }) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+          <option value="other">Other</option>
+        </select>
+      </label>
 
       {/* Gender — row of pills */}
       <div className="space-y-1.5">

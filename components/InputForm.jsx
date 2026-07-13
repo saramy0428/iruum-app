@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { COUNTRY_OPTIONS } from "../lib/longitudeCorrection.js";
 
 const FIELD_BASE =
   "w-full bg-transparent border-0 border-b border-ink/25 py-3 px-1 " +
@@ -227,15 +228,18 @@ export default function InputForm({ onSubmit, isLoading }) {
         }
       >
         <div className="grid grid-cols-2 gap-6">
-          <input
-            type="text"
-            autoComplete="country-name"
-            disabled={form.placeUnknown}
-            className={`${FIELD_BASE} disabled:opacity-30`}
-            placeholder="Country"
+          <Select
             value={form.birthCountry}
             onChange={(e) => update("birthCountry", e.target.value)}
-          />
+            disabled={form.placeUnknown}
+            aria-label="Country of birth"
+          >
+            <option value="">Select country</option>
+            {COUNTRY_OPTIONS.map(({ key, label }) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+            <option value="other">Other</option>
+          </Select>
           <input
             type="text"
             autoComplete="address-level2"

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateDestinyName } from "../../../lib/generateDestinyName.js";
-import { getFourPillars } from "../../../lib/saju.js";
+import { computePillarsFromInput } from "../../../lib/computePillars.js";
 import { getSupabaseServiceClient } from "../../../lib/supabase/server.js";
 
 export async function POST(request) {
@@ -56,11 +56,7 @@ async function persistSajuResult(result) {
 
   try {
     const { input } = result;
-    const [year, month, day] = input.birthDate.split("-").map(Number);
-    const [hour, minute] = input.birthTime
-      ? input.birthTime.split(":").map(Number)
-      : [9, 0];
-    const fourPillars = getFourPillars(year, month, day, hour, minute);
+    const fourPillars = computePillarsFromInput(input);
 
     const { data, error } = await supabase
       .from("saju_results")

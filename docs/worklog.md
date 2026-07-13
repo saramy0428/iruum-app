@@ -12,6 +12,55 @@
 
 # Sessions
 
+## 2026-07-13 — 국가별 경도 보정 + 사주 파싱 공통 헬퍼
+
+### 변경 내용
+1. **경도 보정 테이블** (`lib/longitudeCorrection.js` 신규)
+   - 주요 25개국 → `{ longitude, timezoneMeridian }` 매핑
+   - `getSolarTimeOffsetMinutes(country)` — `(경도 − 자오선) × 4` 반올림하여 분 단위 오프셋 반환
+   - 자유 텍스트 입력 대응용 별칭 테이블 (`"South Korea" → "korea"`, `"US" → "usa"`, `대한민국`, `한국` 등)
+   - 매핑 없음 / falsy / `"other"` → `0` 반환
+2. **파싱+보정 공통 헬퍼** (`lib/computePillars.js` 신규)
+   - `computePillarsFromInput({ birthDate, birthTime, birthCountry, placeUnknown })`
+   - `birthDate/birthTime` 문자열 파싱 → 국가 오프셋 조회 → `new Date(...)`로 shift → `getFourPillars()` 호출
+   - `placeUnknown=true`면 오프셋 스킵
+   - **`Date` 레벨에서 shift**하는 이유: 경도 보정으로 자정 넘어가면 일주(day pillar)도 바뀜 → `getHourPillar` 내부 시프트로는 처리 불가
+3. **중복 파싱 제거**
+   - `lib/generateDestinyName.js:272-279` — `[year, month, day]`, `[hour, minute]` 파싱 + `getFourPillars` 호출 4줄이 헬퍼 1줄로 축약
+   - `app/api/name/route.js:60-63` — 동일 파싱 로직이 DB 저장용으로 중복돼 있던 것도 헬퍼로 통일
+   - `getFourPillars` import 두 곳에서 제거
+4. **UI: 국가 자유 텍스트 → Select 드롭다운**
+   - `lib/longitudeCorrection.js` — 각 엔트리에 `label` 추가 (단일 소스), `COUNTRY_OPTIONS = [{key, label}, ...]` export
+   - `components/InputForm.jsx:229-249` — `<input type="text">` → `<Select>`. "Select country" + 25개국 + "Other"
+   - `app/page.jsx (CompactForm)` — state에 `birthCountry: ""` 추가, Birth time과 Gender 사이에 새 country select 필드, submit payload에 `birthCountry: form.birthCountry || null` 포함
+   - 국가 순서를 지역별 그룹(동아시아 → 동남아 → 남아시아 → 아메리카 → 유럽 → 오세아니아)으로 재정렬
+
+### 만진 파일
+- `lib/longitudeCorrection.js` (신규)
+- `lib/computePillars.js` (신규)
+- `lib/generateDestinyName.js`
+- `app/api/name/route.js`
+- `components/InputForm.jsx`
+- `app/page.jsx`
+- `lib/saju.js` — **손 안 댐** (순수 계산 엔진 유지, `getFourPillars` 시그니처 그대로)
+
+### 메모 / 결정
+- **`saju.js` 불변 원칙**: `CLAUDE.md`에 "do not break" 명시 + 만세력 24/24 검증 완료. 보정은 엔진 밖 preprocessing으로 격리하는 게 안전.
+- **경도 보정 위치**: `getHourPillar` 내부가 아닌 `getFourPillars` 진입 전 `Date` 시프트로 처리. 이유는 위 3번 참조 — 시주 계산만 밀면 일·월·년주가 어긋남.
+- **자유 텍스트 country의 정확도 한계**: `InputForm.jsx:230-238`이 자유 텍스트라 오타 시 매칭 실패 → 0으로 폴백. 정확도가 중요해지면 `<select>` 또는 country autocomplete로 정규화 필요. 지금은 별칭 몇 개만 커버.
+- **경도 폭 큰 국가 오차**: USA는 중부(-97, -90) 기준이라 뉴욕 사용자는 실제 -16분인데 -28분으로 계산됨. `birthCity`까지 활용하는 city→timezone 매핑이 다음 단계 개선안. Phase 1에서는 국가 단위로 충분히 근사.
+- **DST 미고려**: 서머타임은 별개 이슈. 서양권 여름 출생자는 사용자가 직접 표시 시간에서 1시간 빼서 입력해야 함 (현재는 UI 안내 없음 — 나중에 필요 시 추가).
+- **`placeUnknown` 파라미터**: `InputForm.jsx` 페이로드에는 없지만 `placeUnknown=true`일 때 `birthCountry`를 `null`로 보내고 있어 `getSolarTimeOffsetMinutes(null) → 0`으로 자연 폴백. 헬퍼는 명시적 `placeUnknown` 플래그도 받아서 향후 확장 여지 남김.
+- **CompactForm에는 "I don't know" 체크박스 안 만듦**: 25개국 리스트 + "Other" 옵션으로 미확인 케이스 흡수. 폼을 더 크게 만들지 않기 위함. 기본값("Select country", 빈 문자열)과 "Other" 모두 offset 0으로 폴백.
+- **자유 텍스트 → Select 결정 근거**: 오늘 만든 `getSolarTimeOffsetMinutes`는 자유 텍스트도 별칭 매핑으로 커버하지만, 사용자가 "코리아", "kr", 오타 입력 시 조용히 폴백되어 UX 신뢰가 낮아짐. Select는 데이터 키와 표시 라벨을 강제 매칭 → 보정 확실성 확보.
+- **`COUNTRY_OPTIONS` 공통 export**: InputForm.jsx와 CompactForm 두 곳에서 재사용. `COUNTRY_LONGITUDE`에 국가 추가만 하면 두 폼 자동 반영.
+
+### 검증
+- `npm run build` 통과 (11 routes)
+- 검산 예시: 서울 `(126.98 − 135) × 4 = -32분`, 도쿄 `+19분`, 뉴욕/미국(중부기준) `-28분`
+
+---
+
 ## 2026-06-27 — 단일 페이지 컴팩트 폼 + 카드형 결과
 
 ### 변경 내용
